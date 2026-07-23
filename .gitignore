@@ -30,3 +30,24 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# SQLite databases
+*.db
+
+# Environment variables
+.env
+.env.*
+
+# ChromaDB
+backend/data/chroma/
+
+
+
