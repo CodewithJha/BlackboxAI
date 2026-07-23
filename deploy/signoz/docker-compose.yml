@@ -1,0 +1,75 @@
+version: "3"
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1-alpine
+    container_name: signoz-clickhouse
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/clickhouse-config.xml
+    environment:
+      - CLICKHOUSE_DB=signoz_traces
+    ports:
+      - "8123:8123"
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
+  schema-migrator:
+    image: signoz/signoz-schema-migrator:0.88.3
+    container_name: signoz-schema-migrator
+    command: ["--dsn", "tcp://clickhouse:9000"]
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  query-service:
+    image: signoz/query-service:0.35.0
+    container_name: signoz-query-service
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      schema-migrator:
+        condition: service_completed_successfully
+    volumes:
+      - ./signoz_data:/var/lib/signoz
+    environment:
+      - ClickHouseUrl=tcp://clickhouse:9000
+      - STORAGE=clickhouse
+    restart: on-failure
+
+  otel-collector:
+    image: signoz/signoz-otel-collector:0.88.3
+    container_name: signoz-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      schema-migrator:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  frontend:
+    image: signoz/frontend:0.35.0
+    container_name: signoz-frontend
+    ports:
+      - "3301:3301" # SigNoz UI Console
+    volumes:
+      - ./nginx-frontend.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      query-service:
+        condition: service_started
+    environment:
+      - BACKEND_API=http://query-service:8080
+    restart: on-failure
+
+volumes:
+  ch_data:
