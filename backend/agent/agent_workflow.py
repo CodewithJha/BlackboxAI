@@ -14,14 +14,15 @@ from pydantic import BaseModel, Field
 from backend.event.event_broker import event_broker
 from backend.telemetry.otel_config import tracer
 from backend.service.scenario_engine import get_scenario
+from backend.config import has_configured_gemini_api_key
 
 logger = logging.getLogger("blackbox.agent")
 
 # Configure Google Gemini client
-gemini_key = os.environ.get("GEMINI_API_KEY")
+gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 gemini_model = None
-if gemini_key:
+if has_configured_gemini_api_key():
     try:
         genai.configure(api_key=gemini_key)
         gemini_model = genai.GenerativeModel(GEMINI_MODEL)
