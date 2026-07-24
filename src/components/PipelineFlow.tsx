@@ -19,10 +19,10 @@ export type PipelineNode = {
 export const defaultPipeline: PipelineNode[] = [
   { label: "Prompt", icon: MessageSquare, meta: "input" },
   { label: "Retriever", icon: Search, meta: "top-k=6" },
-  { label: "Vector DB", icon: Database, meta: "pgvector" },
-  { label: "LLM", icon: Brain, meta: "gpt-4o" },
-  { label: "Tools", icon: Wrench, meta: "3 calls" },
-  { label: "Validation", icon: ShieldCheck, meta: "schema" },
+  { label: "Vector DB", icon: Database, meta: "ChromaDB" },
+  { label: "LLM", icon: Brain, meta: "Gemini 2.5" },
+  { label: "Tools", icon: Wrench, meta: "weather API" },
+  { label: "Validation", icon: ShieldCheck, meta: "Pydantic" },
   { label: "Response", icon: Sparkles, meta: "stream" },
 ];
 
