@@ -2,6 +2,7 @@ import asyncio
 import uuid
 import json
 import logging
+import os
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI, Request, HTTPException
@@ -10,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 from backend.database.db import db
 from backend.event.event_broker import event_broker
+from backend.config import has_configured_gemini_api_key
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("blackbox.main")
@@ -28,6 +30,10 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     await db.connect()
+    if has_configured_gemini_api_key():
+        logger.info("Gemini API key detected. Live model-backed mode is enabled.")
+    else:
+        logger.warning("GEMINI_API_KEY is missing or still set to the example placeholder. Starting in offline demo mode with mock responses and seeded investigations.")
     logger.info("Application startup database connections established.")
 
 @app.on_event("shutdown")
@@ -121,7 +127,7 @@ async def get_settings_diagnostics():
     db_type = "PostgreSQL" if db.is_postgres else "SQLite"
 
     # Gemini config status
-    gemini_key_exists = bool(os.environ.get("GEMINI_API_KEY"))
+    gemini_key_exists = has_configured_gemini_api_key()
     gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
     prompt_version = os.environ.get("DETECTIVE_PROMPT_VERSION", "v1.0")
 

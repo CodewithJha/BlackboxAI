@@ -18,20 +18,20 @@ const initial: Msg[] = [
 const pipeline = [
   { label: "Prompt", meta: "input" },
   { label: "Retriever", meta: "top-k=6" },
-  { label: "Embedding", meta: "3-small" },
-  { label: "GPT", meta: "4o" },
+  { label: "Embedding", meta: "text-3-small" },
+  { label: "LLM", meta: "Gemini 2.5" },
   { label: "Weather Tool", meta: "JMA" },
-  { label: "Validator", meta: "schema" },
+  { label: "Validator", meta: "Pydantic" },
   { label: "Response", meta: "stream" },
 ];
 
 const nodeIndexMap: Record<string, number> = {
   "Prompt Parser": 0,
-  "Retriever (pgvector)": 1,
+  "Retriever (ChromaDB)": 1,
   "Embedding (text-3-small)": 2,
-  "LLM Router (gpt-4o)": 3,
+  "LLM Router": 3,
   "Weather Tool (JMA)": 4,
-  "Validator (zod)": 5,
+  "Validator (Pydantic)": 5,
   "Responder (Stream)": 6
 };
 
@@ -100,13 +100,28 @@ function Playground() {
   // Dynamic execution steps, matching the pipeline names
   const [steps, setSteps] = useState<any[]>([
     { name: "Prompt Parser", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-    { name: "Retriever (pgvector)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+    { name: "Retriever (ChromaDB)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
     { name: "Embedding (text-3-small)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-    { name: "LLM Router (gpt-4o)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+    { name: "LLM Router", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
     { name: "Weather Tool (JMA)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-    { name: "Validator (zod)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+    { name: "Validator (Pydantic)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
     { name: "Responder (Stream)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
   ]);
+
+  const [apiKeyConfigured, setApiKeyConfigured] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/settings/diagnostics")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.gemini_api_key_configured !== "undefined") {
+          setApiKeyConfigured(data.gemini_api_key_configured);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch diagnostics for API key check:", err);
+      });
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -125,11 +140,11 @@ function Playground() {
     // Reset steps state for this new execution run
     setSteps([
       { name: "Prompt Parser", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-      { name: "Retriever (pgvector)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+      { name: "Retriever (ChromaDB)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
       { name: "Embedding (text-3-small)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-      { name: "LLM Router (gpt-4o)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+      { name: "LLM Router", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
       { name: "Weather Tool (JMA)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
-      { name: "Validator (zod)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
+      { name: "Validator (Pydantic)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
       { name: "Responder (Stream)", status: "ok", latency: 0, duration: 0, cost: 0, tokens: 0, errors: 0, retries: 0, start_time: 0 },
     ]);
 
@@ -300,7 +315,7 @@ function Playground() {
             <option value="expensive_prompt">Expensive Prompt</option>
             <option value="validation_failure">Validation Failure</option>
           </select>
-          <PageAction icon={Zap}>gpt-4o</PageAction>
+          <PageAction icon={Zap}>{apiKeyConfigured ? "Gemini 2.5" : "Offline Demo"}</PageAction>
         </>
       }
     >
@@ -321,6 +336,13 @@ function Playground() {
               <button className="rounded-full px-2.5 py-1 text-muted-foreground hover:text-foreground">Tools</button>
             </div>
           </div>
+
+          {!apiKeyConfigured && (
+            <div className="flex items-center gap-2 bg-amber-500/10 border-b border-amber-500/20 px-5 py-2.5 text-xs text-amber-400 font-mono">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span>Offline simulated mode. Add <strong>GEMINI_API_KEY</strong> to <code>backend/.env</code> for real models.</span>
+            </div>
+          )}
 
           <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-5 py-6 md:px-8">
             {messages.map((m, i) => (
