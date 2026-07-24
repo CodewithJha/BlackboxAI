@@ -70,10 +70,11 @@ fi
 
 # 4. Start Backend Server
 info "Starting FastAPI Backend on port 8000..."
-cd "$ROOT_DIR/backend"
-source .venv/bin/activate
-uvicorn main:app --reload --host 127.0.0.1 --port 8000 > "$ROOT_DIR/backend.log" 2>&1 &
+cd "$ROOT_DIR"
+source backend/.venv/bin/activate
+PYTHONPATH=. uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000 > "$ROOT_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
+
 
 # 5. Start Frontend Server
 info "Starting TanStack Start Frontend..."
