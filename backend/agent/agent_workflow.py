@@ -288,6 +288,8 @@ async def weather_tool_node(state: AgentState) -> Dict[str, Any]:
         match = re.search(r'\b(?:in|for|at|of)\b\s+([a-zA-Z\s]+)', prompt_clean, re.IGNORECASE)
         if match:
             city = match.group(1).strip()
+            # Clean trailing timing keywords from city name
+            city = re.sub(r'\b(right\s+now|now|today|tomorrow|yesterday|currently)\b.*$', '', city, flags=re.IGNORECASE).strip()
         else:
             words = [w.strip() for w in re.split(r'\s+', prompt_clean) if w.strip()]
             if words:
