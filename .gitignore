@@ -49,5 +49,8 @@ ENV/
 # ChromaDB
 backend/data/chroma/
 
+# SigNoz Foundry generated deployment artifacts
+pours/
+
 
 
